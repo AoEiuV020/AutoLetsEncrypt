@@ -37,6 +37,6 @@ certbot-auto renew  --manual-public-ip-logging-ok --cert-name aoeiuv020.com  --m
 
 初次申请同理，  
 ```
-certbot-auto certonly  -d *.aoeiuv020.com  -d aoeiuv020.com  -d *.aoeiuv020.cc  -d aoeiuv020.cc  -d *.aoeiuv020.cn  -d aoeiuv020.cn --manual --preferred-challenges dns --server https://acme-v02.api.letsencrypt.org/directory  --manual-auth-hook certbot-renew-hook.sh --manual-cleanup-hook reset.sh
+certbot-auto certonly  --manual-public-ip-logging-ok  -d *.aoeiuv020.com  -d aoeiuv020.com  -d *.aoeiuv020.cc  -d aoeiuv020.cc  -d *.aoeiuv020.cn  -d aoeiuv020.cn --manual --preferred-challenges dns --server https://acme-v02.api.letsencrypt.org/directory  --manual-auth-hook certbot-renew-hook.sh --manual-cleanup-hook reset.sh
 ```
 
