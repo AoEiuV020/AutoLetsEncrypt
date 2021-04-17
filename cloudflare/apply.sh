@@ -16,9 +16,7 @@ if test -z "$value"; then
 fi
 
 zoneId=$(./queryZone.sh $domain)
-echo zoneId=$zoneId >&2
 subDomain=_acme-challenge
 # 添加记录，
-echo ./add.sh $zoneId $domain $value >&2
 ./add.sh $zoneId $domain $value
 

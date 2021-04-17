@@ -18,6 +18,5 @@ idList=($(
     jq -r '.[].RecordId'
 ))
 for id in ${idList[*]}; do
-  echo aliyun alidns DeleteDomainRecord --RecordId $id $dryrun
   aliyun alidns DeleteDomainRecord --RecordId $id $dryrun
 done

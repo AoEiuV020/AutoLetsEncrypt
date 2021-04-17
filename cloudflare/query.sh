@@ -20,6 +20,4 @@ fi
 export keyScript=${keyScript:-$PWD/../key.sh}
 . $keyScript
 
-echo key=$CLOUD_FLARE_TOKEN >&2
-echo curl -X GET "https://api.cloudflare.com/client/v4/zones/$zoneId/dns_records?name=$subDomain.$domain&page=1&per_page=20&order=type&direction=desc&match=all" -H "Authorization: Bearer $CLOUD_FLARE_TOKEN" -H "Content-Type: application/json" >&2
 curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$zoneId/dns_records?name=$subDomain.$domain&page=1&per_page=20&order=type&direction=desc&match=all" -H "Authorization: Bearer $CLOUD_FLARE_TOKEN" -H "Content-Type: application/json"

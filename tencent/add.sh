@@ -20,7 +20,6 @@ mkdir $tmpdir
 trap "{ rm -rf $tmpdir; }" EXIT
 cd $tmpdir
 
-echo key=$TENCENT_KEY >&2
 subDomain=_acme-challenge
 valueStr=$(echo {} |
   jq ".+{SecretId:\"$TENCENT_ID\"}" |
@@ -40,14 +39,11 @@ valueStr=$(echo {} |
   jq -r 'to_entries|map("\(.key)=\(.value)")|join("&")')
 apiDomain="cns.api.qcloud.com"
 srcStr="GET$apiDomain/v2/index.php?$valueStr"
-echo srcStr=$srcStr >&2
 
 sign=$(echo -n $srcStr | openssl sha256 -hmac $TENCENT_KEY -binary | base64)
 # url encode,
 sign=${sign//+/%2B}
 sign=${sign//\//%2F}
-echo sign=$sign >&2
 
 url="https://$apiDomain/v2/index.php?$valueStr&Signature=$sign"
-echo curl $url >&2
 curl -s $url

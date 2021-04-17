@@ -18,6 +18,5 @@ fi
 subDomain=_acme-challenge
 
 # 添加记录，
-echo aliyun alidns AddDomainRecord --DomainName $domain --RR $subDomain --Type TXT --Value $value $dryrun
 aliyun alidns AddDomainRecord --DomainName $domain --RR $subDomain --Type TXT --Value $value $dryrun
 

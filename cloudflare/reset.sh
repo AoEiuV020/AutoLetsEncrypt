@@ -10,7 +10,6 @@ if test -z "$domain"; then
   exit 1
 fi
 
-echo key=$CLOUD_FLARE_TOKEN >&2
 zoneId=$(./queryZone.sh $domain)
 subDomain=_acme-challenge
 # 删除之前设置的记录，
@@ -19,7 +18,6 @@ idList=($(
     jq -r '.result[].id'
 ))
 for id in ${idList[*]}; do
-  echo ./delete.sh $zoneId $domain $id >&2
   ./delete.sh $zoneId $domain $id
 done
 

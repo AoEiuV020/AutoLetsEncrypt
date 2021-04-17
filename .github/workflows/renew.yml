@@ -1,0 +1,76 @@
+
+name: renew
+
+on:
+  schedule:
+    - cron:  '0 4 * * 1'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - uses: actions/checkout@v2
+
+      - name: prepare
+        run: |
+            if test ! -z "${{ secrets.DOMAIN_LIST }}" && test ! -z "${{ secrets.KEY_SH }}" && test ! -z "${{ secrets.WEBDAV_URL }}"
+            then
+                echo renew='true' >> $GITHUB_ENV
+            fi
+            if test ! -z "${{ secrets.WEBDAV_URL }}"
+            then
+                echo webdav='true' >> $GITHUB_ENV
+            fi
+
+
+      - name: download old config
+        if: ${{ env.webdav == 'true' }}
+        run: |
+            WEBDAV_URL=${{ secrets.WEBDAV_URL }}
+            code=$(curl --digest -w '%{http_code}' -O $WEBDAV_URL/letsencrypt.tar.gz)
+            if test "x$code" == "x200"
+            then
+                tar -zxf letsencrypt.tar.gz
+                test -d letsencrypt
+            elif test "x$code" == "x404"
+            then
+                echo "download letsencrypt.tar.gz from webdav failed not found"
+            else
+                echo "download letsencrypt.tar.gz from webdav failed $code"
+                exit 1
+            fi
+
+      - name: init
+        if: ${{ env.renew == 'true' }}
+        run: |
+            export DOMAIN_LIST="${{ secrets.DOMAIN_LIST }}"
+            export KEY_SH="${{ secrets.KEY_SH }}"
+            ./init.sh
+
+      - name: renew
+        if: ${{ env.renew == 'true' }}
+        run: |
+            export DRY_RUN='--dry-run'
+            ./renew.sh
+
+      - name: upload new config
+        if: ${{ env.webdav == 'true' }}
+        run: |
+            WEBDAV_URL=${{ secrets.WEBDAV_URL }}
+            rm letsencrypt.tar.gz
+            tar --overwrite -zcf letsencrypt.tar.gz letsencrypt
+            code=$(curl --digest -o /dev/null -w '%{http_code}' -T letsencrypt.tar.gz $WEBDAV_URL/)
+            if test "x$code" == "x201"
+            then
+                echo "webdav create letsencrypt.tar.gz success"
+            elif test "x$code" == "x204"
+            then
+                echo "webdav update letsencrypt.tar.gz success"
+            else
+                echo "webdav update letsencrypt.tar.gz failed $code"
+                exit 2
+            fi
+

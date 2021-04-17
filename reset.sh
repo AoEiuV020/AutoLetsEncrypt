@@ -19,6 +19,5 @@ fi
 
 # 删除记录，
 dnsServer=$(jq -r ".\"$domain\"" domain.json)
-echo $PWD/$dnsServer/reset.sh $domain
 $PWD/$dnsServer/reset.sh $domain
 

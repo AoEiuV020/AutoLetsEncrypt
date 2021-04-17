@@ -1,3 +1,9 @@
 /.idea/
 /key.sh
 /domain.json
+/domain.list
+/config/
+/work/
+/log/
+/letsencrypt*
+/test
