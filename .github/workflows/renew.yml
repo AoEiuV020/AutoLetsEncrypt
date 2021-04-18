@@ -53,7 +53,7 @@ jobs:
       - name: renew
         if: ${{ env.renew == 'true' }}
         run: |
-            export DRY_RUN='--dry-run'
+            #export DRY_RUN='--dry-run'
             ./renew.sh
 
       - name: upload new config
