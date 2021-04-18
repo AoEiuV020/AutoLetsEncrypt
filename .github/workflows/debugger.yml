@@ -1,0 +1,48 @@
+
+name: debugger
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: prepare
+        run: |
+            if test ! -z "${{ secrets.DOMAIN_LIST }}" && test ! -z "${{ secrets.KEY_SH }}" && test ! -z "${{ secrets.WEBDAV_URL }}"
+            then
+                echo renew='true' >> $GITHUB_ENV
+            fi
+            if test ! -z "${{ secrets.WEBDAV_URL }}"
+            then
+                echo webdav='true' >> $GITHUB_ENV
+            fi
+
+      - name: download old config
+        if: ${{ env.webdav == 'true' }}
+        run: |
+            WEBDAV_URL=${{ secrets.WEBDAV_URL }}
+            code=$(curl --digest -w '%{http_code}' -O $WEBDAV_URL/letsencrypt.tar.gz)
+            if test "x$code" == "x200"
+            then
+                tar -zxf letsencrypt.tar.gz
+                test -d letsencrypt
+            elif test "x$code" == "x404"
+            then
+                echo "download letsencrypt.tar.gz from webdav failed not found"
+            else
+                echo "download letsencrypt.tar.gz from webdav failed $code"
+                exit 1
+            fi
+      - name: init
+        if: ${{ env.renew == 'true' }}
+        run: |
+            export DOMAIN_LIST="${{ secrets.DOMAIN_LIST }}"
+            export KEY_SH="${{ secrets.KEY_SH }}"
+            ./init.sh
+
+      - name: Setup Debug Session
+        uses: csexton/debugger-action@master
