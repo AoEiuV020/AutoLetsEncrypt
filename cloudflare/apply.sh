@@ -18,5 +18,5 @@ fi
 zoneId=$(./queryZone.sh $domain)
 subDomain=_acme-challenge
 # 添加记录，
-./add.sh $zoneId $domain $value
+./add.sh $zoneId $domain "$value"
 

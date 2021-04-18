@@ -27,8 +27,8 @@ if test ! -d "$dnsServer"; then
   echo "$domain => $dnsServer not support"
   exit 5
 fi
-echo $PWD/$dnsServer/apply.sh $domain $value
-$PWD/$dnsServer/apply.sh $domain $value
+echo $PWD/$dnsServer/apply.sh "$domain" "$value"
+$PWD/$dnsServer/apply.sh "$domain" "$value"
 
 # 等生效，添加记录很快生效的，
 echo sleep 10
