@@ -1,5 +1,7 @@
 
 name: renew
+env:
+    TZ: Asia/Shanghai
 
 on:
   schedule:
