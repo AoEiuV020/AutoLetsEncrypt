@@ -32,7 +32,7 @@ jobs:
         if: ${{ env.webdav == 'true' }}
         run: |
             WEBDAV_URL=${{ secrets.WEBDAV_URL }}
-            code=$(curl --digest -w '%{http_code}' -O $WEBDAV_URL/letsencrypt.tar.gz)
+            code=$(curl -w '%{http_code}' -O $WEBDAV_URL/letsencrypt.tar.gz)
             if test "x$code" == "x200"
             then
                 tar -zxf letsencrypt.tar.gz
@@ -64,7 +64,7 @@ jobs:
             WEBDAV_URL=${{ secrets.WEBDAV_URL }}
             rm letsencrypt.tar.gz
             tar --overwrite -zcf letsencrypt.tar.gz letsencrypt
-            code=$(curl --digest -o /dev/null -w '%{http_code}' -T letsencrypt.tar.gz $WEBDAV_URL/)
+            code=$(curl -o /dev/null -w '%{http_code}' -T letsencrypt.tar.gz $WEBDAV_URL/)
             if test "x$code" == "x201"
             then
                 echo "webdav create letsencrypt.tar.gz success"
