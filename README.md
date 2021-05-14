@@ -44,6 +44,7 @@ https://user:pass@webdav.example.com/path/file
 * actions log中会泄漏域名列表，禁掉会影响排查问题，以后再考虑，
 * 没有实际用到的服务商也会尝试配置，可能导致错误，主要是说aliyun，
 * actions cron时区貌似无法设置，只能是+0时区，目前配置的时间和预计不同，
+* 添加域名时，老证书没有吊销，快过期时会收到邮件提醒续期，
 
 ## 计划中
 * 使用github releases保存加密后的证书用于后续的续签，这样就能省下一个webdav,
