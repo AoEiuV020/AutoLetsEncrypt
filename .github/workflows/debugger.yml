@@ -25,7 +25,7 @@ jobs:
         if: ${{ env.webdav == 'true' }}
         run: |
             WEBDAV_URL=${{ secrets.WEBDAV_URL }}
-            code=$(curl --digest -w '%{http_code}' -O $WEBDAV_URL/letsencrypt.tar.gz)
+            code=$(curl -w '%{http_code}' -O $WEBDAV_URL/letsencrypt.tar.gz)
             if test "x$code" == "x200"
             then
                 tar -zxf letsencrypt.tar.gz
