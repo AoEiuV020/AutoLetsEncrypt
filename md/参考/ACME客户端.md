@@ -19,7 +19,7 @@ git clone --depth 1 https://github.com/acmesh-official/acme.sh.git
 acme.sh --issue --dns dns_ali -d example.com
 
 # 签发通配符证书
-acme.sh --issue --dns dns_ali -d example.com -d '*.example.com'
+acme.sh --issue -d example.com --dns dns_ali -d '*.example.com'
 
 # 续签指定域名
 acme.sh --renew -d example.com
@@ -36,6 +36,8 @@ acme.sh --cron
 | 参数 | 说明 |
 |------|------|
 | `--server letsencrypt` | 使用 Let's Encrypt（默认 CA 是 ZeroSSL） |
+| `--server letsencrypt_test` | 使用 Let's Encrypt [测试服务器](https://acme-staging-v02.api.letsencrypt.org/directory)（不受速率限制） |
+| `--staging` | 等同于 `--server letsencrypt_test`，但不能与 `--server` 同时使用（`--server` 优先） |
 | `--force` | 强制续签（即使证书未到期） |
 | `--config-home /path` | 自定义配置/证书存储目录（CI/CD 必选） |
 | `--cert-home /path` | 单独设置证书存储目录 |
@@ -64,7 +66,7 @@ acme.sh --cron
 ```bash
 export Ali_Key="AccessKey ID"
 export Ali_Secret="AccessKey Secret"
-acme.sh --issue --dns dns_ali -d example.com -d '*.example.com'
+acme.sh --issue -d example.com --dns dns_ali -d '*.example.com'
 ```
 
 > [wiki: dns_ali](https://github.com/acmesh-official/acme.sh/wiki/dnsapi#dns_ali)
@@ -76,21 +78,37 @@ acme.sh --issue --dns dns_ali -d example.com -d '*.example.com'
 ```bash
 export Tencent_SecretId="SecretId"
 export Tencent_SecretKey="SecretKey"
-acme.sh --issue --dns dns_tencent -d example.com -d '*.example.com'
+acme.sh --issue -d example.com --dns dns_tencent -d '*.example.com'
 ```
 
 > `dns_dp` 使用旧版 DNSPod API（`dnsapi.cn`），凭据为 `DP_Id`/`DP_Key`，不推荐。
 
 ### Cloudflare（dns_cf）
 
+两种认证方式：
+
 ```bash
-# API Token（推荐，需 Zone > DNS > Edit 权限）
-export CF_Token="your-token"
-export CF_Account_ID="your-account-id"  # 多域名用 Account ID
-acme.sh --issue --dns dns_cf -d example.com -d '*.example.com'
+# 方式一：API Token（推荐，最小权限）
+# 需要 Zone > DNS > Edit 权限
+export CF_Token="your-api-token"
+export CF_Account_ID="your-account-id"
+
+# 方式二：全局 API Key（不推荐）
+export CF_Key="your-global-api-key"
+export CF_Email="your-email@example.com"
+
+acme.sh --issue -d example.com --dns dns_cf -d '*.example.com'
 ```
 
-> 也支持 `CF_Zone_ID`（单域名）或 `CF_Key`+`CF_Email`（全局密钥，不推荐）。[wiki: dns_cf](https://github.com/acmesh-official/acme.sh/wiki/dnsapi#1-cloudflare-option)
+| 变量 | 说明 |
+|------|------|
+| `CF_Token` | [API Token](https://dash.cloudflare.com/profile/api-tokens)（推荐） |
+| `CF_Account_ID` | 账户 ID（Token 方式必填） |
+| `CF_Zone_ID` | Zone ID（可选，单域名可用来代替 Account ID） |
+| `CF_Key` | 全局 API Key（不推荐） |
+| `CF_Email` | 账户邮箱（仅 Key 方式需要） |
+
+> [wiki: dns_cf](https://github.com/acmesh-official/acme.sh/wiki/dnsapi#1-cloudflare-option)
 
 ## 混合 DNS 服务商（Hybrid Mode）
 
@@ -100,13 +118,11 @@ acme.sh --issue --dns dns_cf -d example.com -d '*.example.com'
 acme.sh --issue \
   -d a.com  --dns dns_ali \
   -d '*.a.com' --dns dns_ali \
-  -d b.com  --dns dns_tencent \
-  -d '*.b.com' --dns dns_tencent \
-  -d c.com  --dns dns_cf \
-  -d '*.c.com' --dns dns_cf
+  -d b.com  --dns dns_cf \
+  -d '*.b.com' --dns dns_cf
 ```
 
-每个 `--dns` 作用于紧跟其后的 `-d` 域名，直到遇到下一个 `--dns`。
+> **`-d` 与 `--dns` 按位置 1:1 匹配**：acme.sh 将所有 `-d` 和所有验证方式分别累加为逗号列表，按位置一一对应。位置缺失时自动复用上一个（所以单服务商只写一次 `--dns` 即可），但混合模式必须每个域名都显式写明。
 
 ## CI/CD 用法
 
@@ -116,13 +132,15 @@ git clone --depth 1 https://github.com/acmesh-official/acme.sh.git /tmp/acme.sh
 
 # 2. 设置环境变量（从 CI Secrets 注入）
 
-# 3. 签发/续签
+# 3. 签发/续签（每个 -d 配一个 --dns）
 /tmp/acme.sh/acme.sh --issue \
   --config-home ./certs \
   --server letsencrypt \
   --force \
   -d a.com --dns dns_ali \
-  -d b.com --dns dns_tencent
+  -d '*.a.com' --dns dns_ali \
+  -d b.com --dns dns_cf \
+  -d '*.b.com' --dns dns_cf
 
-# 4. 证书在 ./certs/<domain>/ 下
+# 4. 证书在 ./certs/<domain>_ecc/ 下
 ```

@@ -25,15 +25,19 @@ ACME_ARGS=()
 for domain in $(jq -r 'keys_unsorted[]' domain.json); do
     provider=$(jq -r ".\"$domain\"" domain.json)
     dns_name=$(provider_dns "$provider")
-    ACME_ARGS+=(--dns "$dns_name" -d "$domain" -d "*.$domain")
+    ACME_ARGS+=(-d "$domain" --dns "$dns_name" -d "*.$domain" --dns "$dns_name")
 done
 
 # 签发/续签证书
-# DRY_RUN 可设为 --staging 使用测试服务器
+# DRY_RUN 非空时使用 Let's Encrypt 测试服务器
+ACME_SERVER=${ACME_SERVER:-letsencrypt}
+if [ -n "$DRY_RUN" ]; then
+    ACME_SERVER="letsencrypt_test"
+fi
+
 ./acme.sh/acme.sh --issue \
     --config-home "$PWD/acme-data" \
-    --server letsencrypt \
+    --server "$ACME_SERVER" \
     --force \
     --accountemail "$CERT_EMAIL" \
-    "${ACME_ARGS[@]}" \
-    $DRY_RUN
+    "${ACME_ARGS[@]}"
