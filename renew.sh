@@ -29,15 +29,18 @@ for domain in $(jq -r 'keys_unsorted[]' domain.json); do
 done
 
 # 签发/续签证书
-# DRY_RUN 非空时使用 Let's Encrypt 测试服务器
-ACME_SERVER=${ACME_SERVER:-letsencrypt}
+# ACME_SERVER 未设置时使用 acme.sh 默认 CA（ZeroSSL）
+# DRY_RUN 非空时使用 staging 测试服务器
+SERVER_ARGS=()
 if [ -n "$DRY_RUN" ]; then
-    ACME_SERVER="letsencrypt_test"
+    SERVER_ARGS=(--staging)
+elif [ -n "$ACME_SERVER" ]; then
+    SERVER_ARGS=(--server "$ACME_SERVER")
 fi
 
 ./acme.sh/acme.sh --log --issue \
     --config-home "$PWD/acme-data" \
-    --server "$ACME_SERVER" \
+    "${SERVER_ARGS[@]}" \
     --force \
     --accountemail "$CERT_EMAIL" \
     "${ACME_ARGS[@]}"

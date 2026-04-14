@@ -1,8 +1,8 @@
-# AGENTS.md — AutoLetsEncrypt
+# AGENTS.md — AutoCert
 
 ## 项目概述
 
-自动申请和续签 Let's Encrypt 证书的工具，通过 acme.sh hybrid DNS 模式 + GitHub Actions 实现无人值守。证书存储在 WebDAV 上。
+自动申请和续签 SSL 证书的工具，通过 acme.sh hybrid DNS 模式 + GitHub Actions 实现无人值守。支持 ZeroSSL、Let's Encrypt 等 ACME CA，证书存储在 WebDAV 上。
 
 ## 架构
 

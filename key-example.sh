@@ -1,5 +1,6 @@
 #!/bin/sh
 CERT_EMAIL=*********@*****.***
+ACME_SERVER=letsencrypt
 Ali_Key=************************
 Ali_Secret=******************************
 Tencent_SecretId=************************************

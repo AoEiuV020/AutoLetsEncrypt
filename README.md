@@ -1,6 +1,6 @@
-# AutoLetsEncrypt
+# AutoCert
 
-通过 GitHub Actions 自动申请和续签 [Let's Encrypt](https://letsencrypt.org/) 证书，使用 [acme.sh](https://github.com/acmesh-official/acme.sh) hybrid DNS 模式支持多域名多服务商单证书。
+通过 GitHub Actions 自动申请和续签 SSL 证书，使用 [acme.sh](https://github.com/acmesh-official/acme.sh) hybrid DNS 模式支持多域名多服务商单证书。
 
 ## 工作原理
 
@@ -45,6 +45,7 @@ Shell 脚本格式的密钥配置，参考 [key-example.sh](key-example.sh)：
 ```shell
 #!/bin/sh
 CERT_EMAIL=your@email.com
+ACME_SERVER=letsencrypt
 Ali_Key=your_ali_access_key
 Ali_Secret=your_ali_secret
 Tencent_SecretId=your_tencent_secret_id
@@ -53,7 +54,7 @@ CF_Token=your_cf_api_token
 CF_Account_ID=your_cf_account_id
 ```
 
-只需配置实际用到的服务商凭据。
+只需配置实际用到的服务商凭据。`ACME_SERVER` 指定证书颁发机构，不设置时使用 acme.sh 默认 CA。
 
 ### WEBDAV_URL
 
