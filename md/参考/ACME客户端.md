@@ -12,6 +12,51 @@ curl https://get.acme.sh | sh -s email=my@example.com
 git clone --depth 1 https://github.com/acmesh-official/acme.sh.git
 ```
 
+## 基本用法
+
+```bash
+# 签发单域名证书（DNS 方式）
+acme.sh --issue --dns dns_ali -d example.com
+
+# 签发通配符证书
+acme.sh --issue --dns dns_ali -d example.com -d '*.example.com'
+
+# 续签指定域名
+acme.sh --renew -d example.com
+
+# 续签所有证书
+acme.sh --renew-all
+
+# 自动检查并续签到期证书（适合 cron）
+acme.sh --cron
+```
+
+## 关键参数
+
+| 参数 | 说明 |
+|------|------|
+| `--server letsencrypt` | 使用 Let's Encrypt（默认 CA 是 ZeroSSL） |
+| `--force` | 强制续签（即使证书未到期） |
+| `--config-home /path` | 自定义配置/证书存储目录（CI/CD 必选） |
+| `--cert-home /path` | 单独设置证书存储目录 |
+| `--install-cert -d example.com` | 将证书复制到指定路径 |
+| `--accountemail my@example.com` | 设置注册邮箱 |
+
+## 证书文件
+
+签发后证书保存在 `<config-home>/<domain>/`：
+
+| 文件 | 说明 |
+|------|------|
+| `<domain>.cer` | 域名证书 |
+| `<domain>.key` | 私钥 |
+| `fullchain.cer` | 完整证书链（部署用） |
+| `ca.cer` | CA 证书 |
+
+环境变量首次使用后保存到 `<config-home>/account.conf`，续签时自动读取。
+
+---
+
 ## DNS 服务商
 
 ### 阿里云（dns_ali）
@@ -63,30 +108,6 @@ acme.sh --issue \
 
 每个 `--dns` 作用于紧跟其后的 `-d` 域名，直到遇到下一个 `--dns`。
 
-## 关键参数
-
-| 参数 | 说明 |
-|------|------|
-| `--server letsencrypt` | 使用 Let's Encrypt（默认 CA 是 ZeroSSL） |
-| `--force` | 强制续签（即使证书未到期） |
-| `--config-home /path` | 自定义配置/证书存储目录（CI/CD 必选） |
-| `--cert-home /path` | 单独设置证书存储目录 |
-| `--install-cert -d example.com` | 将证书复制到指定路径 |
-| `--renew -d example.com` | 续签指定域名 |
-| `--renew-all` | 续签所有证书 |
-| `--cron` | 自动检查并续签到期证书 |
-
-## 证书文件
-
-签发后证书保存在 `<config-home>/<domain>/`：
-
-| 文件 | 说明 |
-|------|------|
-| `<domain>.cer` | 域名证书 |
-| `<domain>.key` | 私钥 |
-| `fullchain.cer` | 完整证书链（部署用） |
-| `ca.cer` | CA 证书 |
-
 ## CI/CD 用法
 
 ```bash
@@ -105,5 +126,3 @@ git clone --depth 1 https://github.com/acmesh-official/acme.sh.git /tmp/acme.sh
 
 # 4. 证书在 ./certs/<domain>/ 下
 ```
-
-环境变量首次使用后保存到 `<config-home>/account.conf`，续签时自动读取。
