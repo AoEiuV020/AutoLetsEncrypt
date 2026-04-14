@@ -67,4 +67,19 @@ https://user:pass@webdav.example.com/path
 
 每周日凌晨 4 点（UTC+8）自动续签，也可在 [Actions](../../actions/workflows/renew.yml) 页面手动触发。
 
+### 证书路径
+
+签发成功后，证书保存在 `acme-data/<首个域名>_ecc/` 目录下：
+
+| 文件 | 说明 |
+|------|------|
+| `fullchain.cer` | 完整证书链（部署用，Nginx/Apache 等直接引用此文件） |
+| `<域名>.key` | 私钥 |
+| `<域名>.cer` | 域名证书（不含 CA 链） |
+| `ca.cer` | CA 中间证书 |
+
+可用 `cert-info.sh <证书路径>` 查看证书详情（主体、SAN、有效期等）。
+
+### 部署
+
 **部署不在本项目范围内。** 证书上传到 WebDAV 后，可使用 crontab + [extract.sh](extract.sh) 定期拉取部署，或自行编写部署脚本。extract.sh 会检查归档更新时间，仅在最近 24 小时内有更新时才部署，并执行 `/etc/acme-data.d/*.sh` 中的重启钩子。
