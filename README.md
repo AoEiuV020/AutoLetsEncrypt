@@ -1,51 +1,86 @@
 # AutoLetsEncrypt
-用于自动申请letsencrypt证书，通过手动dns钩子实现无人值守续签，使用actions每周自动续签，
+
+通过 GitHub Actions 自动申请和续签 [Let's Encrypt](https://letsencrypt.org/) 证书，使用 [acme.sh](https://github.com/acmesh-official/acme.sh) hybrid DNS 模式支持多域名多服务商单证书。
+
+## 工作原理
+
+```
+GitHub Actions (每周日 UTC 20:00)
+  ├── 从 WebDAV 下载旧配置（acme-data.tar.gz）
+  ├── init.sh — 解析域名列表、写入密钥、克隆 acme.sh
+  ├── renew.sh — 构建 hybrid DNS 命令，签发/续签证书
+  └── 上传新配置到 WebDAV
+```
+
+acme.sh hybrid DNS 模式允许在一张证书中混合使用不同 DNS 服务商，每个域名自动签发主域名和通配符（`*.domain`）。
 
 ## 使用方法
-fork后在settings - Secrets中配置敏感数据，
-1. DOMAIN_LIST 需要申请证书的域名列表，一行一个，格式为“<域名> <服务商>”,  
-   空格分隔，服务商目前支持的包括，  
-   | 阿里云: aliyun  
-   | 腾讯云: tencent  
-   | cloudflare: cloudflare  
-   示例：
+
+Fork 本仓库后，在 Settings → Secrets and variables → Actions 中配置以下 Secrets：
+
+### DOMAIN_LIST
+
+域名列表，每行格式为 `<域名> <服务商>`，空格分隔：
+
 ```
 domain1.com aliyun
 domain1.cn tencent
-domain1.cc aliyun
 domain2.name cloudflare
 ```
-2. KEY_SH 参考[key-example.sh](key-example.sh), 配置用到的服务商accessKey，以及邮箱用于注册certbot接收续期提醒之类邮件，
-   示例：
+
+支持的服务商：
+
+| 用户填写 | acme.sh DNS 插件 | 所需凭据 |
+|---------|-----------------|---------|
+| aliyun | dns_ali | `Ali_Key` + `Ali_Secret` |
+| tencent | dns_tencent | `Tencent_SecretId` + `Tencent_SecretKey`（TencentCloud API 3.0） |
+| cloudflare | dns_cf | `CF_Token` + `CF_Account_ID` |
+
+### KEY_SH
+
+Shell 脚本格式的密钥配置，参考 [key-example.sh](key-example.sh)：
+
 ```shell
 #!/bin/sh
-CERT_EMAIL=*********@*****.***
-ALIYUN_KEY=************************
-ALIYUN_SECRET=******************************
-TENCENT_ID=************************************
-TENCENT_KEY=********************************
-CLOUD_FLARE_TOKEN=****************************************
-```
-3. WEBDAV_URL webdav网盘地址，包括用户名密码，
-   示例：
-```
-https://user:pass@webdav.example.com/path/file
+CERT_EMAIL=your@email.com
+Ali_Key=your_aliyun_access_key
+Ali_Secret=your_aliyun_secret
+Tencent_SecretId=your_tencent_secret_id
+Tencent_SecretKey=your_tencent_secret_key
+CF_Token=your_cloudflare_api_token
+CF_Account_ID=your_cloudflare_account_id
 ```
 
-然后就可以了，每周一凌晨4点自动从webdav下载旧配置（如果没有就会创建），续签后上传回webdav，  
-也可以在[actions](../../actions/workflows/renew.yml)中点击Run workflow手动运行，
+只需配置实际用到的服务商凭据。
 
-**不涉及部署**, 已经上传到webdav了大可简单使用crontab每周自动从webdav获取证书并部署，
-参考[extract.sh](extract.sh),  
-或者自己写部署脚本放在letsencrypt/renewal-hooks/deploy续签后自动运行，通过自己规定的方法发布到自己的服务器上，
+### WEBDAV_URL
 
-## 已知问题
-* 偶尔会因网络等各种临时问题导致续签失败，只要重试或者等下周自动再次续签就可以了，
-* actions log中会泄漏域名列表，禁掉会影响排查问题，以后再考虑，
-* 没有实际用到的服务商也会尝试配置，可能导致错误，主要是说aliyun，
-* 添加域名时，老证书没有吊销，快过期时会收到邮件提醒续期，
+WebDAV 地址（含认证信息），用于存储证书配置：
 
-## 计划中
-* 使用github releases保存加密后的证书用于后续的续签，这样就能省下一个webdav,
+```
+https://user:pass@webdav.example.com/path
+```
 
+## 配置完成后
 
+每周日凌晨 4 点（UTC+8）自动续签，也可在 [Actions](../../actions/workflows/renew.yml) 页面手动触发。
+
+**部署不在本项目范围内。** 证书上传到 WebDAV 后，可使用 crontab + [extract.sh](extract.sh) 定期拉取部署，或自行编写部署脚本。extract.sh 会检查归档更新时间，仅在最近 24 小时内有更新时才部署，并执行 `/etc/acme-data.d/*.sh` 中的重启钩子。
+
+## 从旧版本迁移
+
+如果从 certbot 版本升级，需要更新 KEY_SH 中的变量名：
+
+| 旧变量名 | 新变量名 | 说明 |
+|---------|---------|------|
+| `CERT_EMAIL` | `CERT_EMAIL` | 不变 |
+| `ALIYUN_KEY` | `Ali_Key` | — |
+| `ALIYUN_SECRET` | `Ali_Secret` | — |
+| `TENCENT_ID` | `Tencent_SecretId` | 需更换为 TencentCloud API 密钥（非旧 DNSPod Token） |
+| `TENCENT_KEY` | `Tencent_SecretKey` | 同上 |
+| `CLOUD_FLARE_TOKEN` | `CF_Token` | — |
+| — | `CF_Account_ID` | 新增，Cloudflare 多域名时需要 |
+
+⚠️ **腾讯云用户注意：** 新版使用 TencentCloud API 3.0（`dns_tencent`），需要在[腾讯云控制台](https://console.cloud.tencent.com/cam/capi)获取 SecretId/SecretKey，旧版 DNSPod Token 不再适用。
+
+WebDAV 上的归档名也从 `letsencrypt.tar.gz` 改为 `acme-data.tar.gz`，首次运行会创建新归档。部署端的 extract.sh 需同步更新。
