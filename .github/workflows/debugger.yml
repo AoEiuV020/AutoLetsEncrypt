@@ -5,38 +5,34 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  debug:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+
       - name: prepare
         run: |
-            if test ! -z "${{ secrets.DOMAIN_LIST }}" && test ! -z "${{ secrets.KEY_SH }}" && test ! -z "${{ secrets.WEBDAV_URL }}"
-            then
+            if [ -n "${{ secrets.DOMAIN_LIST }}" ] && [ -n "${{ secrets.KEY_SH }}" ] && [ -n "${{ secrets.WEBDAV_URL }}" ]; then
                 echo renew='true' >> $GITHUB_ENV
             fi
-            if test ! -z "${{ secrets.WEBDAV_URL }}"
-            then
+            if [ -n "${{ secrets.WEBDAV_URL }}" ]; then
                 echo webdav='true' >> $GITHUB_ENV
             fi
 
       - name: download old config
         if: ${{ env.webdav == 'true' }}
         run: |
-            WEBDAV_URL=${{ secrets.WEBDAV_URL }}
-            code=$(curl -w '%{http_code}' -O $WEBDAV_URL/letsencrypt.tar.gz)
-            if test "x$code" == "x200"
-            then
-                tar -zxf letsencrypt.tar.gz
-                test -d letsencrypt
-            elif test "x$code" == "x404"
-            then
-                echo "download letsencrypt.tar.gz from webdav failed not found"
-            else
-                echo "download letsencrypt.tar.gz from webdav failed $code"
+            WEBDAV_URL="${{ secrets.WEBDAV_URL }}"
+            code=$(curl -s -w '%{http_code}' -o acme-data.tar.gz "$WEBDAV_URL/acme-data.tar.gz")
+            if [ "$code" = "200" ]; then
+                tar -zxf acme-data.tar.gz
+                rm -f acme-data.tar.gz
+            elif [ "$code" != "404" ]; then
+                echo "Download failed with HTTP $code"
                 exit 1
             fi
+
       - name: init
         if: ${{ env.renew == 'true' }}
         run: |

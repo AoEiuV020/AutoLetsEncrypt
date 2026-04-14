@@ -5,43 +5,39 @@ env:
 
 on:
   schedule:
-    - cron:  '0 20 * * sun' # 时区对cron无效，所以要提前8个小时，
+    - cron: '0 20 * * sun'
   workflow_dispatch:
 
 jobs:
-  build:
+  renew:
     runs-on: ubuntu-latest
 
     steps:
-
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: prepare
         run: |
-            if test ! -z "${{ secrets.DOMAIN_LIST }}" && test ! -z "${{ secrets.KEY_SH }}" && test ! -z "${{ secrets.WEBDAV_URL }}"
-            then
+            if [ -n "${{ secrets.DOMAIN_LIST }}" ] && [ -n "${{ secrets.KEY_SH }}" ] && [ -n "${{ secrets.WEBDAV_URL }}" ]; then
                 echo renew='true' >> $GITHUB_ENV
             fi
-            if test ! -z "${{ secrets.WEBDAV_URL }}"
-            then
+            if [ -n "${{ secrets.WEBDAV_URL }}" ]; then
                 echo webdav='true' >> $GITHUB_ENV
             fi
-
 
       - name: download old config
         if: ${{ env.webdav == 'true' }}
         run: |
-            WEBDAV_URL=${{ secrets.WEBDAV_URL }}
-            code=$(curl -w '%{http_code}' -O $WEBDAV_URL/letsencrypt.tar.gz)
-            if test "x$code" == "x200"
-            then
-                tar -zxf letsencrypt.tar.gz
-                test -d letsencrypt
-            elif test "x$code" == "x404"
-            then
-                echo "download letsencrypt.tar.gz from webdav failed not found"
+            WEBDAV_URL="${{ secrets.WEBDAV_URL }}"
+            code=$(curl -s -w '%{http_code}' -o acme-data.tar.gz "$WEBDAV_URL/acme-data.tar.gz")
+            if [ "$code" = "200" ]; then
+                tar -zxf acme-data.tar.gz
+                rm -f acme-data.tar.gz
+                echo "Downloaded existing config"
+            elif [ "$code" = "404" ]; then
+                rm -f acme-data.tar.gz
+                echo "No existing config, will create new"
             else
-                echo "download letsencrypt.tar.gz from webdav failed $code"
+                echo "Download failed with HTTP $code"
                 exit 1
             fi
 
@@ -54,25 +50,18 @@ jobs:
 
       - name: renew
         if: ${{ env.renew == 'true' }}
-        run: |
-            #export DRY_RUN='--dry-run'
-            ./renew.sh
+        run: ./renew.sh
 
       - name: upload new config
         if: ${{ env.webdav == 'true' }}
         run: |
-            WEBDAV_URL=${{ secrets.WEBDAV_URL }}
-            rm letsencrypt.tar.gz
-            tar --overwrite -zcf letsencrypt.tar.gz letsencrypt
-            code=$(curl -o /dev/null -w '%{http_code}' -T letsencrypt.tar.gz $WEBDAV_URL/)
-            if test "x$code" == "x201"
-            then
-                echo "webdav create letsencrypt.tar.gz success"
-            elif test "x$code" == "x204"
-            then
-                echo "webdav update letsencrypt.tar.gz success"
+            WEBDAV_URL="${{ secrets.WEBDAV_URL }}"
+            tar -zcf acme-data.tar.gz acme-data
+            code=$(curl -s -o /dev/null -w '%{http_code}' -T acme-data.tar.gz "$WEBDAV_URL/")
+            if [ "$code" = "201" ] || [ "$code" = "204" ]; then
+                echo "Upload success (HTTP $code)"
             else
-                echo "webdav update letsencrypt.tar.gz failed $code"
+                echo "Upload failed with HTTP $code"
                 exit 2
             fi
 
