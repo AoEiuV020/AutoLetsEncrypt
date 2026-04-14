@@ -8,20 +8,15 @@ if [ ! -r "$keyScript" ]; then
     echo "key script not found or not readable: $keyScript"
     exit 1
 fi
+set -a
 . "$keyScript"
+set +a
 
-# 导出 acme.sh 需要的环境变量
-export Ali_Key Ali_Secret
-export Tencent_SecretId Tencent_SecretKey
-export CF_Token CF_Account_ID
-
-# 服务商名称映射
+# 服务商名称补全 dns_ 前缀
 provider_dns() {
     case "$1" in
-        aliyun)     echo "dns_ali" ;;
-        tencent)    echo "dns_tencent" ;;
-        cloudflare) echo "dns_cf" ;;
-        *)          echo "$1" ;;
+        dns_*) echo "$1" ;;
+        *)     echo "dns_$1" ;;
     esac
 }
 
@@ -42,4 +37,3 @@ done
     --accountemail "$CERT_EMAIL" \
     "${ACME_ARGS[@]}" \
     $DRY_RUN
-

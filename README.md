@@ -23,18 +23,20 @@ Fork 本仓库后，在 Settings → Secrets and variables → Actions 中配置
 域名列表，每行格式为 `<域名> <服务商>`，空格分隔：
 
 ```
-domain1.com aliyun
+domain1.com ali
 domain1.cn tencent
-domain2.name cloudflare
+domain2.name cf
 ```
 
-支持的服务商：
+DOMAIN_LIST 中的服务商名称会自动补全 `dns_` 前缀（`ali` → `dns_ali`），也可直接写完整名称（`dns_ali`）。全部可用的 DNS 插件见 [acme.sh wiki](https://github.com/acmesh-official/acme.sh/wiki/dnsapi)。
 
-| 用户填写 | acme.sh DNS 插件 | 所需凭据 |
+常用服务商：
+
+| 名称 | acme.sh DNS 插件 | 所需凭据 |
 |---------|-----------------|---------|
-| aliyun | dns_ali | `Ali_Key` + `Ali_Secret` |
+| ali | dns_ali | `Ali_Key` + `Ali_Secret` |
 | tencent | dns_tencent | `Tencent_SecretId` + `Tencent_SecretKey`（TencentCloud API 3.0） |
-| cloudflare | dns_cf | `CF_Token` + `CF_Account_ID` |
+| cf | dns_cf | `CF_Token` + `CF_Account_ID` |
 
 ### KEY_SH
 
@@ -69,7 +71,17 @@ https://user:pass@webdav.example.com/path
 
 ## 从旧版本迁移
 
-如果从 certbot 版本升级，需要更新 KEY_SH 中的变量名：
+如果从 certbot 版本升级，需要更新：
+
+**DOMAIN_LIST 服务商名称：**
+
+| 旧名称 | 新名称 |
+|--------|--------|
+| `aliyun` | `ali` |
+| `tencent` | `tencent` |
+| `cloudflare` | `cf` |
+
+**KEY_SH 变量名：**
 
 | 旧变量名 | 新变量名 | 说明 |
 |---------|---------|------|

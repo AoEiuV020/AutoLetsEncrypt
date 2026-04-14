@@ -14,15 +14,6 @@ if [ -z "$value" ]; then
     exit 2
 fi
 
-# 校验服务商名称
-case "$value" in
-    aliyun|tencent|cloudflare) ;;
-    *)
-        echo "unsupported provider: $value (supports: aliyun, tencent, cloudflare)"
-        exit 3
-        ;;
-esac
-
 domainFile=domain.json
 if [ ! -e "$domainFile" ]; then
     echo '{}' > "$domainFile"

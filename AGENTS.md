@@ -34,15 +34,13 @@ acme.sh --issue --dns dns_ali -d a.com -d '*.a.com' --dns dns_cf -d b.com -d '*.
 
 ## DNS 服务商
 
-所有 DNS 操作由 acme.sh 内置插件完成，本项目不包含任何服务商实现代码。
+所有 DNS 操作由 acme.sh 内置插件完成，本项目不包含任何服务商实现代码。支持 [acme.sh 全部 190+ DNS 服务商](https://github.com/acmesh-official/acme.sh/wiki/dnsapi)，名称自动补全 `dns_` 前缀。
 
-| 服务商 | acme.sh 插件 | 环境变量 |
-|--------|-------------|---------|
-| aliyun | dns_ali | `Ali_Key`, `Ali_Secret` |
+| 名称 | acme.sh 插件 | 环境变量 |
+|---------|-------------|---------|
+| ali | dns_ali | `Ali_Key`, `Ali_Secret` |
 | tencent | dns_tencent | `Tencent_SecretId`, `Tencent_SecretKey` |
-| cloudflare | dns_cf | `CF_Token`, `CF_Account_ID` |
-
-服务商名称映射定义在 renew.sh 的 `provider_dns()` 函数中。
+| cf | dns_cf | `CF_Token`, `CF_Account_ID` |
 
 ## 关键配置（GitHub Secrets）
 
