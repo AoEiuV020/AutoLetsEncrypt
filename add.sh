@@ -1,28 +1,31 @@
 #!/bin/sh
-# 添加域名对应dns的服务商，
+# 添加域名对应dns的服务商
 set -e
-oldpwd=$PWD
-cd $(dirname $0)
+cd "$(dirname "$0")"
 domain=$1
 value=$2
 
-if test -z "$domain"; then
-  echo domain empty
-  exit 1
+if [ -z "$domain" ]; then
+    echo "domain empty"
+    exit 1
 fi
-if test -z "$value"; then
-  echo value empty
-  exit 2
+if [ -z "$value" ]; then
+    echo "value empty"
+    exit 2
 fi
 
-if test ! -d "$value"; then
-  echo $value not support
-  exit 3
-fi
+# 校验服务商名称
+case "$value" in
+    aliyun|tencent|cloudflare) ;;
+    *)
+        echo "unsupported provider: $value (supports: aliyun, tencent, cloudflare)"
+        exit 3
+        ;;
+esac
 
 domainFile=domain.json
-if test ! -e $domainFile; then
-  echo '{}' >$domainFile
+if [ ! -e "$domainFile" ]; then
+    echo '{}' > "$domainFile"
 fi
-jq ".+{\"$domain\":\"$value\"}" $domainFile >$domainFile.bak
-mv -f $domainFile.bak $domainFile
+jq ".+{\"$domain\":\"$value\"}" "$domainFile" > "$domainFile.bak"
+mv -f "$domainFile.bak" "$domainFile"

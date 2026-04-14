@@ -2,8 +2,8 @@
 /key.sh
 /domain.json
 /domain.list
-/config/
+/acme.sh/
+/acme-data/
 /work/
 /log/
-/letsencrypt*
 /test

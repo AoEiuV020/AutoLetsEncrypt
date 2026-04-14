@@ -1,18 +1,45 @@
 #!/bin/bash
 set -e
-oldpwd=$PWD
-cd $(dirname $0)
-export keyScript=${1:-$PWD/key.sh}
-if test ! -e "$keyScript"; then
-  echo $keyScript not found
-  exit 3
+cd "$(dirname "$0")"
+
+# 加载凭据
+keyScript=${1:-$PWD/key.sh}
+if [ ! -r "$keyScript" ]; then
+    echo "key script not found or not readable: $keyScript"
+    exit 1
 fi
-if test ! -r "$keyScript"; then
-  echo $keyScript can not read
-  exit 4
-fi
-certname=$(cat domain.json |jq 'keys_unsorted[0]' -r)
-certlist=$(cat domain.json |jq 'keys_unsorted|map(" -d "+.+" -d *."+.)|add' -r)
-certargs="--config-dir $PWD/letsencrypt --work-dir $PWD/work --logs-dir $PWD/log"
-certbot $certargs certonly  --cert-name $certname --expand $certlist --manual --preferred-challenges dns --server https://acme-v02.api.letsencrypt.org/directory  --manual-auth-hook $PWD/certbot-renew-hook.sh --manual-cleanup-hook  $PWD/reset.sh --force-renewal $DRY_RUN
+. "$keyScript"
+
+# 导出 acme.sh 需要的环境变量
+export Ali_Key Ali_Secret
+export Tencent_SecretId Tencent_SecretKey
+export CF_Token CF_Account_ID
+
+# 服务商名称映射
+provider_dns() {
+    case "$1" in
+        aliyun)     echo "dns_ali" ;;
+        tencent)    echo "dns_tencent" ;;
+        cloudflare) echo "dns_cf" ;;
+        *)          echo "$1" ;;
+    esac
+}
+
+# 构建域名参数（hybrid DNS 模式）
+ACME_ARGS=()
+for domain in $(jq -r 'keys_unsorted[]' domain.json); do
+    provider=$(jq -r ".\"$domain\"" domain.json)
+    dns_name=$(provider_dns "$provider")
+    ACME_ARGS+=(--dns "$dns_name" -d "$domain" -d "*.$domain")
+done
+
+# 签发/续签证书
+# DRY_RUN 可设为 --staging 使用测试服务器
+./acme.sh/acme.sh --issue \
+    --config-home "$PWD/acme-data" \
+    --server letsencrypt \
+    --force \
+    --accountemail "$CERT_EMAIL" \
+    "${ACME_ARGS[@]}" \
+    $DRY_RUN
 

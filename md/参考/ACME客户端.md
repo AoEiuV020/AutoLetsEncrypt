@@ -1,95 +1,109 @@
-# ACME 客户端
+# acme.sh 参考
 
-除 certbot 外，还有其他 ACME 客户端内置了 DNS 服务商支持，无需手写 DNS hook 脚本。
+[acme.sh](https://github.com/acmesh-official/acme.sh)（⭐46.3K）：纯 Shell ACME 客户端，仅需 curl/openssl，支持 [190+ DNS 服务商](https://github.com/acmesh-official/acme.sh/wiki/dnsapi)。
 
-## 对比
-
-| 特性 | certbot | [acme.sh](https://github.com/acmesh-official/acme.sh)（⭐46.3K） | [lego](https://github.com/go-acme/lego)（⭐9.5K） |
-|------|---------|---------|------|
-| 语言 | Python | Shell | Go |
-| 安装方式 | snap / pip | curl 一行安装 | 单二进制下载 |
-| DNS 服务商数 | 需插件或手动 hook | ~150+ | ~180 |
-| 阿里云 | 需手动 hook | ✅ `dns_ali` | ✅ `alidns` |
-| 腾讯云 DNSPod | 需手动 hook | ✅ `dns_dp` | ✅ `tencentcloud` |
-| Cloudflare | 需插件 `certbot-dns-cloudflare` | ✅ `dns_cf` | ✅ `cloudflare` |
-| 通配符证书 | ✅ | ✅ | ✅ |
-| 无 root 运行 | ❌ 需 snap/sudo | ✅ | ✅ |
-| GitHub Actions 适配 | 需 snap install | curl 安装即可 | 下载二进制即可 |
-| 凭据管理 | 文件/环境变量 | 自动保存到 account.conf | 环境变量 |
-
-## acme.sh
-
-纯 Shell 实现，无依赖（仅需 curl/openssl）。
-
-### 基本用法
+## 安装
 
 ```bash
-# 安装
+# 在线安装（安装到 ~/.acme.sh/）
 curl https://get.acme.sh | sh -s email=my@example.com
 
-# 使用阿里云 DNS 申请通配符证书
-export Ali_Key="your-key"
-export Ali_Secret="your-secret"
+# 或 git clone 后使用（CI/CD 推荐）
+git clone --depth 1 https://github.com/acmesh-official/acme.sh.git
+```
+
+## DNS 服务商
+
+### 阿里云（dns_ali）
+
+```bash
+export Ali_Key="AccessKey ID"
+export Ali_Secret="AccessKey Secret"
 acme.sh --issue --dns dns_ali -d example.com -d '*.example.com'
+```
 
-# 使用腾讯云 DNSPod
-export DP_Id="your-id"
-export DP_Key="your-key"
-acme.sh --issue --dns dns_dp -d example.com -d '*.example.com'
+> [wiki: dns_ali](https://github.com/acmesh-official/acme.sh/wiki/dnsapi#dns_ali)
 
-# 使用 Cloudflare
-export CF_DNS_API_TOKEN="your-token"
+### 腾讯云（dns_tencent）
+
+使用 [TencentCloud API 3.0](https://github.com/acmesh-official/acme.sh/wiki/dnsapi2#dns_tencent)（`dnspod.tencentcloudapi.com`），非旧版 `dns_dp`。
+
+```bash
+export Tencent_SecretId="SecretId"
+export Tencent_SecretKey="SecretKey"
+acme.sh --issue --dns dns_tencent -d example.com -d '*.example.com'
+```
+
+> `dns_dp` 使用旧版 DNSPod API（`dnsapi.cn`），凭据为 `DP_Id`/`DP_Key`，不推荐。
+
+### Cloudflare（dns_cf）
+
+```bash
+# API Token（推荐，需 Zone > DNS > Edit 权限）
+export CF_Token="your-token"
+export CF_Account_ID="your-account-id"  # 多域名用 Account ID
 acme.sh --issue --dns dns_cf -d example.com -d '*.example.com'
 ```
 
-### 特点
+> 也支持 `CF_Zone_ID`（单域名）或 `CF_Key`+`CF_Email`（全局密钥，不推荐）。[wiki: dns_cf](https://github.com/acmesh-official/acme.sh/wiki/dnsapi#1-cloudflare-option)
 
-- 自动续签（cron job）
-- 凭据首次输入后保存到 `~/.acme.sh/account.conf`，后续续签无需重复配置
-- 默认 CA 是 ZeroSSL（可切换为 Let's Encrypt：`--server letsencrypt`）
+## 混合 DNS 服务商（Hybrid Mode）
 
-## lego
-
-Go 编写的单二进制 ACME 客户端，[~180 个 DNS 服务商](https://go-acme.github.io/lego/dns)内置支持。
-
-### 基本用法
+单证书中不同域名使用[不同 DNS 服务商](https://github.com/acmesh-official/acme.sh/wiki/How-to-issue-a-cert#3-multiple-domains-san-mode--hybrid-mode)：
 
 ```bash
-# 下载（GitHub Actions 中可用 go install 或直接下载 release）
-# https://github.com/go-acme/lego/releases
-
-# 使用阿里云 DNS
-ALICLOUD_ACCESS_KEY=your-key \
-ALICLOUD_SECRET_KEY=your-secret \
-lego --email my@example.com --dns alidns -d '*.example.com' -d example.com run
-
-# 使用腾讯云
-TENCENTCLOUD_SECRET_ID=your-id \
-TENCENTCLOUD_SECRET_KEY=your-key \
-lego --email my@example.com --dns tencentcloud -d '*.example.com' -d example.com run
-
-# 使用 Cloudflare
-CF_DNS_API_TOKEN=your-token \
-lego --email my@example.com --dns cloudflare -d '*.example.com' -d example.com run
-
-# 续签
-lego --email my@example.com --dns cloudflare -d example.com renew
+acme.sh --issue \
+  -d a.com  --dns dns_ali \
+  -d '*.a.com' --dns dns_ali \
+  -d b.com  --dns dns_tencent \
+  -d '*.b.com' --dns dns_tencent \
+  -d c.com  --dns dns_cf \
+  -d '*.c.com' --dns dns_cf
 ```
 
-### 特点
+每个 `--dns` 作用于紧跟其后的 `-d` 域名，直到遇到下一个 `--dns`。
 
-- 单二进制，零依赖，下载即用
-- 证书默认保存在 `.lego/certificates/` 目录
-- 支持 `--path` 指定证书存储路径
-- 支持 `renew --hook` 续签后执行自定义脚本
+## 关键参数
 
-## 对本项目的意义
+| 参数 | 说明 |
+|------|------|
+| `--server letsencrypt` | 使用 Let's Encrypt（默认 CA 是 ZeroSSL） |
+| `--force` | 强制续签（即使证书未到期） |
+| `--config-home /path` | 自定义配置/证书存储目录（CI/CD 必选） |
+| `--cert-home /path` | 单独设置证书存储目录 |
+| `--install-cert -d example.com` | 将证书复制到指定路径 |
+| `--renew -d example.com` | 续签指定域名 |
+| `--renew-all` | 续签所有证书 |
+| `--cron` | 自动检查并续签到期证书 |
 
-使用 acme.sh 或 lego 可以**完全替代 certbot + 手写 DNS hook 脚本**：
+## 证书文件
 
-- 不再需要 `certbot-renew-hook.sh`、各服务商的 `apply.sh`/`reset.sh`
-- 不再需要安装 certbot（snap）和 aliyun-cli
-- DNS 记录的添加/删除/等待传播 全部由 ACME 客户端内部处理
-- 工作流简化为：下载工具 → 设置环境变量 → 一条命令完成申请/续签
+签发后证书保存在 `<config-home>/<domain>/`：
 
-**推荐 lego**：单二进制适合 CI/CD 环境，下载解压即可运行，无需安装步骤。
+| 文件 | 说明 |
+|------|------|
+| `<domain>.cer` | 域名证书 |
+| `<domain>.key` | 私钥 |
+| `fullchain.cer` | 完整证书链（部署用） |
+| `ca.cer` | CA 证书 |
+
+## CI/CD 用法
+
+```bash
+# 1. 下载 acme.sh（不执行 --install）
+git clone --depth 1 https://github.com/acmesh-official/acme.sh.git /tmp/acme.sh
+
+# 2. 设置环境变量（从 CI Secrets 注入）
+
+# 3. 签发/续签
+/tmp/acme.sh/acme.sh --issue \
+  --config-home ./certs \
+  --server letsencrypt \
+  --force \
+  -d a.com --dns dns_ali \
+  -d b.com --dns dns_tencent
+
+# 4. 证书在 ./certs/<domain>/ 下
+```
+
+环境变量首次使用后保存到 `<config-home>/account.conf`，续签时自动读取。
