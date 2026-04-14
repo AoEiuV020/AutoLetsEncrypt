@@ -45,12 +45,12 @@ Shell 脚本格式的密钥配置，参考 [key-example.sh](key-example.sh)：
 ```shell
 #!/bin/sh
 CERT_EMAIL=your@email.com
-Ali_Key=your_aliyun_access_key
-Ali_Secret=your_aliyun_secret
+Ali_Key=your_ali_access_key
+Ali_Secret=your_ali_secret
 Tencent_SecretId=your_tencent_secret_id
 Tencent_SecretKey=your_tencent_secret_key
-CF_Token=your_cloudflare_api_token
-CF_Account_ID=your_cloudflare_account_id
+CF_Token=your_cf_api_token
+CF_Account_ID=your_cf_account_id
 ```
 
 只需配置实际用到的服务商凭据。
@@ -68,31 +68,3 @@ https://user:pass@webdav.example.com/path
 每周日凌晨 4 点（UTC+8）自动续签，也可在 [Actions](../../actions/workflows/renew.yml) 页面手动触发。
 
 **部署不在本项目范围内。** 证书上传到 WebDAV 后，可使用 crontab + [extract.sh](extract.sh) 定期拉取部署，或自行编写部署脚本。extract.sh 会检查归档更新时间，仅在最近 24 小时内有更新时才部署，并执行 `/etc/acme-data.d/*.sh` 中的重启钩子。
-
-## 从旧版本迁移
-
-如果从 certbot 版本升级，需要更新：
-
-**DOMAIN_LIST 服务商名称：**
-
-| 旧名称 | 新名称 |
-|--------|--------|
-| `aliyun` | `ali` |
-| `tencent` | `tencent` |
-| `cloudflare` | `cf` |
-
-**KEY_SH 变量名：**
-
-| 旧变量名 | 新变量名 | 说明 |
-|---------|---------|------|
-| `CERT_EMAIL` | `CERT_EMAIL` | 不变 |
-| `ALIYUN_KEY` | `Ali_Key` | — |
-| `ALIYUN_SECRET` | `Ali_Secret` | — |
-| `TENCENT_ID` | `Tencent_SecretId` | 需更换为 TencentCloud API 密钥（非旧 DNSPod Token） |
-| `TENCENT_KEY` | `Tencent_SecretKey` | 同上 |
-| `CLOUD_FLARE_TOKEN` | `CF_Token` | — |
-| — | `CF_Account_ID` | 新增，Cloudflare 多域名时需要 |
-
-⚠️ **腾讯云用户注意：** 新版使用 TencentCloud API 3.0（`dns_tencent`），需要在[腾讯云控制台](https://console.cloud.tencent.com/cam/capi)获取 SecretId/SecretKey，旧版 DNSPod Token 不再适用。
-
-WebDAV 上的归档名也从 `letsencrypt.tar.gz` 改为 `acme-data.tar.gz`，首次运行会创建新归档。部署端的 extract.sh 需同步更新。
