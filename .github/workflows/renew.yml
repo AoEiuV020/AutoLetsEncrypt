@@ -49,12 +49,22 @@ jobs:
             ./init.sh
 
       - name: renew
+        id: renew
         if: ${{ env.renew == 'true' }}
+        continue-on-error: true
         run: ./renew.sh
+
+      - name: clean log on success
+        if: ${{ steps.renew.outcome == 'success' }}
+        run: rm -f acme-data/acme.sh.log
 
       - name: upload new config
         if: ${{ env.webdav == 'true' }}
         run: |
+            if [ ! -d acme-data ]; then
+                echo "No acme-data directory, skipping upload"
+                exit 0
+            fi
             WEBDAV_URL="${{ secrets.WEBDAV_URL }}"
             tar -zcf acme-data.tar.gz acme-data
             code=$(curl -s -o /dev/null -w '%{http_code}' -T acme-data.tar.gz "$WEBDAV_URL/")
@@ -64,4 +74,10 @@ jobs:
                 echo "Upload failed with HTTP $code"
                 exit 2
             fi
+
+      - name: check renew result
+        if: ${{ steps.renew.outcome == 'failure' }}
+        run: |
+            echo "Certificate renewal failed, but logs have been uploaded"
+            exit 1
 

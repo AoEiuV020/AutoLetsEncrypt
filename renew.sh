@@ -35,7 +35,7 @@ if [ -n "$DRY_RUN" ]; then
     ACME_SERVER="letsencrypt_test"
 fi
 
-./acme.sh/acme.sh --issue \
+./acme.sh/acme.sh --log --issue \
     --config-home "$PWD/acme-data" \
     --server "$ACME_SERVER" \
     --force \
